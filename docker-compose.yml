@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports: ["127.0.0.1:8000:8000"]
+  # Reference infrastructure only. The mock API has no database dependencies.
+  timescale:
+    profiles: ["architecture"]
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-local-demo-only}
+    volumes: ["timescale-data:/var/lib/postgresql/data"]
+  neo4j:
+    profiles: ["architecture"]
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-local-demo-only}
+    volumes: ["neo4j-data:/data"]
+  kafka:
+    profiles: ["architecture"]
+    image: apache/kafka:3.9.1
+  qdrant:
+    profiles: ["architecture"]
+    image: qdrant/qdrant:v1.14.1
+volumes:
+  timescale-data:
+  neo4j-data:
