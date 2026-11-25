@@ -41,6 +41,23 @@ uvicorn backend.main:app --port 8000
 
 Or run `docker compose up --build api`. Open `http://localhost:8000/docs` for the query/simulation API; `/stream` emits one mock event every second. `docker compose --profile architecture up` includes optional storage and queue containers; those are not wired to the mock service. The frontend and the FastAPI fixtures are independent implementations of the scenario, not identical datasets.
 
+## Vercel Services
+
+Import the **repository root** as one Vercel project. [`vercel.json`](vercel.json) defines `app` (Next.js) and `backend` (FastAPI). The Next.js service handles `/`, `/api/analyze`, the existing Payload routes, and other paths outside `/api/reference`. The FastAPI service exposes its synthetic HTTP API, Swagger UI, and OpenAPI schema under `/api/reference`, for example `/api/reference/trends?day=12` and `/api/reference/docs`. The standalone Python commands above keep the original unprefixed paths.
+
+No service bindings are needed: Next.js uses its own seeded replay and its own analysis route, and the FastAPI reference service doesn't call Next.js. Don't set a backend URL or send the Groq key to FastAPI. The FastAPI WebSocket is `/api/reference/stream` on Vercel; Vercel's WebSocket support requires Fluid compute and connections follow the function duration limit.
+
+Use Node.js 24 for `app` and a current Vercel CLI with Services support. From the repository root, link the project with `vercel link`, then run `vercel dev` on your machine (`vercel dev --local` for local-only mode). Use the origin printed by the CLI:
+
+```bash
+BASE_URL=http://localhost:3000  # Replace with the CLI's printed origin if different.
+curl -fsS "$BASE_URL/api/reference/trends?day=12"
+curl -fsS "$BASE_URL/api/reference/openapi.json"
+PULSE_TEST_URL="$BASE_URL" pnpm test:api
+```
+
+The existing Figma-managed Payload configuration still requires its supported environment outside Make for the Next.js service to build. Importing into Vercel or running `vercel dev --local` does not automatically provision that integration. Verify its availability with your hosting setup before deploying; don't substitute placeholder platform credentials. Set `GROQ_API_KEY` in Vercel project settings only if live analysis is wanted.
+
 ## Checks
 
 ```bash

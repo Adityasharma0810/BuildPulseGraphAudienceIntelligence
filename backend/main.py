@@ -7,10 +7,17 @@ from typing import Literal
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from .connectors import telegram, x
-from .emotion_model import LABELS, score
-from .network_analyzer import analyze, simulate
-from .trend_detector import trends
+# Standalone Uvicorn imports backend.main; Vercel imports main from the service root.
+if __package__:
+    from .connectors import telegram, x
+    from .emotion_model import LABELS, score
+    from .network_analyzer import analyze, simulate
+    from .trend_detector import trends
+else:
+    from connectors import telegram, x
+    from emotion_model import LABELS, score
+    from network_analyzer import analyze, simulate
+    from trend_detector import trends
 
 app = FastAPI(title="PulseGraph reference API", version="1.0.0")
 
@@ -71,3 +78,8 @@ async def stream(socket: WebSocket):
             await asyncio.sleep(1)
     except (WebSocketDisconnect, RuntimeError):
         return
+
+
+# Vercel forwards the original path; mounting also keeps FastAPI's docs and schema URLs in sync.
+vercel_app = FastAPI(openapi_url=None)
+vercel_app.mount("/api/reference", app)
